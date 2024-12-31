@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Topology</title>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <style>
+        svg { border: 1px solid black; width: 100%; height: 500px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        th { background-color: #f2f2f2; }
+        .red { color: red; }
+    </style>
+</head>
+<body>
+    <h1>Network Topology</h1>
+    <svg id="topology"></svg>
+    <h2>Anomaly Table</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Timestamp</th>
+                <th>Host Router</th>
+                <th>Anomaly IP</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for anomaly in anomalies %}
+            <tr>
+                <td>{{ anomaly.timestamp }}</td>
+                <td>{{ anomaly.host_router }}</td>
+                <td class="red">{{ anomaly.anomaly_ip }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <script>
+        const topologyData = {{ topology_data|safe }};
+        const svg = d3.select("#topology");
+        const width = +svg.attr("width") || 800;
+        const height = +svg.attr("height") || 500;
+
+        const simulation = d3.forceSimulation(topologyData.nodes)
+            .force("link", d3.forceLink(topologyData.edges).id(d => d.id).distance(100))
+            .force("charge", d3.forceManyBody().strength(-300))
+            .force("center", d3.forceCenter(width / 2, height / 2));
+
+        // Draw links (edges)
+        const link = svg.selectAll(".link")
+            .data(topologyData.edges)
+            .enter().append("line")
+            .attr("stroke", "#999")
+            .attr("stroke-width", 2);
+
+        // Draw nodes (circles) and labels (text)
+        const node = svg.selectAll(".node")
+            .data(topologyData.nodes)
+            .enter().append("g") // Group for circle + text
+            .attr("class", "node")
+            .call(d3.drag()
+                .on("start", dragstarted)
+                .on("drag", dragged)
+                .on("end", dragended));
+
+        // Append circle to the group
+        node.append("circle")
+            .attr("r", 10)
+            .attr("fill", d => d.color);
+
+        // Append text labels to the group
+        node.append("text")
+            .attr("x", 15) // Offset text horizontally
+            .attr("y", 5) // Offset text vertically
+            .attr("font-size", "12px")
+            .attr("fill", "black")
+            .text(d => d.id); // Display node ID (IP or identifier)
+
+        // Simulation tick function to update positions
+        simulation.on("tick", () => {
+            link.attr("x1", d => d.source.x)
+                .attr("y1", d => d.source.y)
+                .attr("x2", d => d.target.x)
+                .attr("y2", d => d.target.y);
+
+            node.attr("transform", d => `translate(${d.x},${d.y})`); // Move group
+        });
+
+        // Drag event handlers
+        function dragstarted(event, d) {
+            if (!event.active) simulation.alphaTarget(0.3).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+        }
+
+        function dragged(event, d) {
+            d.fx = event.x;
+            d.fy = event.y;
+        }
+
+        function dragended(event, d) {
+            if (!event.active) simulation.alphaTarget(0);
+            d.fx = null;
+            d.fy = null;
+        }
+    </script>
+</body>
+</html>
