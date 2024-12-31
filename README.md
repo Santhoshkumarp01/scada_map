@@ -1,8 +1,6 @@
-# scada_map
+# SCADA_Map 
 SCADA system topology mapping project using EIGRP routing protocol
 
-
-# SCADA Map Project
 
 ## Description
 This project focuses on **automatically discovering network topology** for SCADA systems using the **EIGRP (Enhanced Interior Gateway Routing Protocol)**. The goal is to build a tool that maps the network topology in real-time, without using CDP/LLDP protocols, and leveraging syslog for anomaly detection and device identification.
